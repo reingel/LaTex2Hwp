@@ -1,11 +1,18 @@
 import re
 
 
-class Latex2Hwp:
+class Latex2HwpEq:
     def __init__(self):
         pass
 
     def convert(self, latex_str):
+        def replace_dot_bold(match):
+            var = match.group(1).strip()
+            subscript = match.group(2).strip() if match.group(2) else ""
+            superscript = match.group(3).strip() if match.group(3) else ""
+            converted = f"{{dot{{bold {var}}}}}{subscript}{superscript}"
+            return converted
+
         def replace_frac(match):
             numerator = match.group(1)
             denominator = match.group(2)
@@ -29,6 +36,10 @@ class Latex2Hwp:
             matrix_content = ' # '.join(matrix_elements)
             return f"{matrix_type}{{{matrix_content}}}"
 
+        # \dot{\mathbf {var}}_{sub}^{sup} 변환
+        dot_bold_pattern = r'\\dot\{\\mathbf\s*\{?([^{}\s]+)\}?\}(_\{[^{}]*\})?(\^\{[^{}]*\})?'
+        latex_str = re.sub(dot_bold_pattern, replace_dot_bold, latex_str)
+
         # \frac
         frac_pattern = r'\\frac{((?:[^{}]|{[^{}]*})*)}{((?:[^{}]|{[^{}]*})*)}'
         latex_str = re.sub(frac_pattern, replace_frac, latex_str)
@@ -37,8 +48,16 @@ class Latex2Hwp:
         matrix_pattern = r'\\begin{(bmatrix|pmatrix|dmatrix|array)}(?:{([^{}]*?)})?([\s\S]*?)\\end{\1}'
         latex_str = re.sub(matrix_pattern, replace_matrix, latex_str)
 
-        # other commands
-        latex_str = latex_str.replace('\\', '')
+        # aligned
+        latex_str = re.sub(r'\\(begin|end){aligned}', lambda m: '', latex_str)
+        latex_str = latex_str.replace('\\\\', ' # ')
+        # mathbf
+        latex_str = latex_str.replace('\\mathbf', 'bold')
+        latex_str = latex_str.replace('\\boldsymbol', 'bold')
+        # all the other commands
+        latex_str = latex_str.replace('\\', ' ')
+        # special cases
+        latex_str = latex_str.replace('in', '\in')
 
         return latex_str
 
@@ -59,10 +78,14 @@ if __name__ == "__main__":
         r'\begin{array}{cc}a&b\\c&d\end{array}',
         r'\begin{array}{ccc:cc}a&b&c&d&e\\\hdashline f&g&h&i&j\end{array}',
         r'\left[\begin{array}{c:c}\frac{a}{b}&\sqrt{c}\\\hdashline d&\frac{e}{f}\end{array}\right]',
+        r'\begin{aligned}a &= b \\ cdec &= d+1234\end{aligned}',
+        r'\begin{aligned}\frac{a}{b} &= \sqrt{c} \\ \mathbf A &= \begin{dmatrix}a&\frac{b}{c}\\d&\sqrt{e}\end{dmatrix}\end{aligned}',
+        r'\dot{\mathbf v}_{1\times2}^2',
+        r'\alpha \boldsymbol\beta \dot{\boldsymbol\Omega}_{in}^n',
     ]
 
     for test in test_cases:
-        l2h = Latex2Hwp()
+        l2h = Latex2HwpEq()
         result = l2h.convert(test)
         print(f"Input: {test}")
         print(f"{result}\n")
