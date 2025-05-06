@@ -7,10 +7,11 @@ class Latex2HwpEq:
 
     def convert(self, latex_str):
         def replace_dot_bold(match):
-            var = match.group(1).strip()
-            subscript = match.group(2).strip() if match.group(2) else ""
-            superscript = match.group(3).strip() if match.group(3) else ""
-            converted = f"{{dot{{bold {var}}}}}{subscript}{superscript}"
+            modifier = match.group(1).strip()
+            var = match.group(2).strip()
+            subscript = match.group(3).strip() if match.group(3) else ""
+            superscript = match.group(4).strip() if match.group(4) else ""
+            converted = f"{{{modifier}{{bold {var}}}}}{subscript}{superscript}"
             return converted
 
         def replace_frac(match):
@@ -37,7 +38,7 @@ class Latex2HwpEq:
             return f"{matrix_type}{{{matrix_content}}}"
 
         # \dot{\mathbf {var}}_{sub}^{sup} 변환
-        dot_bold_pattern = r'\\dot\{\\mathbf\s*\{?([^{}\s]+)\}?\}(_\{[^{}]*\})?(\^\{[^{}]*\})?'
+        dot_bold_pattern = r'\\(dot|tilde|bar)\{\\mathbf\s*\{?([^{}\s]+)\}?\}(_\{[^{}]*\})?(\^\{[^{}]*\})?'
         latex_str = re.sub(dot_bold_pattern, replace_dot_bold, latex_str)
 
         # \frac
@@ -81,6 +82,8 @@ if __name__ == "__main__":
         r'\begin{aligned}a &= b \\ cdec &= d+1234\end{aligned}',
         r'\begin{aligned}\frac{a}{b} &= \sqrt{c} \\ \mathbf A &= \begin{dmatrix}a&\frac{b}{c}\\d&\sqrt{e}\end{dmatrix}\end{aligned}',
         r'\dot{\mathbf v}_{1\times2}^2',
+        r'\tilde{\mathbf v}_{1\times2}^2',
+        r'\bar{\mathbf v}_{1\times2}^2',
         r'\alpha \boldsymbol\beta \dot{\boldsymbol\Omega}_{in}^n',
     ]
 
